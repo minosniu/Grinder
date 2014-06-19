@@ -66,7 +66,7 @@ class Grinder(QMainWindow):
 
         self.grid_cb = QCheckBox("Show &Grid")
         self.grid_cb.setChecked(False)
-        self.connect(self.grid_cb, SIGNAL('stateChanged(int)'), self.on_draw)
+        self.connect(self.grid_cb, SIGNAL('stateChanged(int)'), self.onGrid)
 
         slider_label = QLabel('Bar width (%):')
         self.slider = QSlider(Qt.Horizontal)
@@ -74,7 +74,7 @@ class Grinder(QMainWindow):
         self.slider.setValue(20)
         self.slider.setTracking(True)
         self.slider.setTickPosition(QSlider.TicksBothSides)
-        self.connect(self.slider, SIGNAL('valueChanged(int)'), self.on_draw)
+        self.connect(self.slider, SIGNAL('valueChanged(int)'), self.onSlider)
 
         #
         # Layout with box sizers
@@ -94,6 +94,11 @@ class Grinder(QMainWindow):
         self.main_frame.setLayout(vbox)
         self.setCentralWidget(self.main_frame)
 
+    def onGrid(self):
+        pass
+
+    def onSlider(self):
+        pass
 
     # Fix this function first and then call it at the load
     def onSetNumTrials(self):
@@ -120,6 +125,8 @@ class Grinder(QMainWindow):
 
         for i in xrange(self.numTrials):
             self.endlines.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=5))
+
+        self.beginline = self.ax.axvline(0, 0, maxL, color='r', linewidth=5)
         self.canvas.draw()
 
     def onSubmit(self):
@@ -172,13 +179,6 @@ class Grinder(QMainWindow):
             self.currArtist.set_data(new_xs, ys)
         self.canvas.draw()
 
-    def on_draw(self):
-        self.fig.clear()
-        self.axes = self.fig.add_subplot(111)
-        self.axes.imshow(self.data, interpolation='nearest')
-        #self.axes.plot([1,2,3])
-        self.canvas.draw()
-
     def drawTrial(self):
         self.fig.clear()
         self.fig.hold(True)
@@ -201,12 +201,6 @@ class Grinder(QMainWindow):
 
     def setFreezer(self, someFreezer):
         self.freezer = someFreezer
-
-    def on_key_press(self, event):
-        print('you pressed', event.key)
-        # implement the default mpl key press events described at
-        # http://matplotlib.org/users/navigation_toolbar.html#navigation-keyboard-shortcuts
-        key_press_handler(event, self.canvas, self.mpl_toolbar)
 
 
 def main():
