@@ -1,6 +1,6 @@
 import matplotlib
-#matplotlib.use('TkAgg')
-matplotlib.use('Qt4Agg')
+matplotlib.use('TkAgg')
+# matplotlib.use('Qt4Agg')
 from matplotlib.widgets import Button
 import pandas
 from pylab import ginput
@@ -34,8 +34,11 @@ class Grinder():
         self.gD = gD
         self.gS = gS
 
+
+        plt.ion()
+
         self.fig, self.ax = plt.subplots()
-        self.currArtist = self.ax
+        self.currArtist = None
 
         self.endlines = []
         self.iBegins = []
@@ -45,7 +48,7 @@ class Grinder():
     def setNumTrials(self):
         self.numTrials = int(raw_input('How many trials do you see?'))
 
-    def onButton(self, event):
+    def onSubmit(self, event):
         self.iEnds = [l.get_data()[0][0] for l in self.endlines]
         for i in xrange(self.numTrials - 1):
             self.iBegins[i+1] = self.iEnds[i] + 1
@@ -58,12 +61,15 @@ class Grinder():
 
         print("Trial Num:", len(self.allTraces))
 
+        # Save to Freezer (MongoDB database)
         for eachTrial in self.allTraces:
             self.freezer.sendToFreezer(expName = self.expName, \
                                   expDate = self.expDate, \
                                   gD = self.gD,\
                                   gS = self.gS, \
                                   trialData = eachTrial)
+
+        plt.close(cad_grinder.fig)
 
     def onPick(self, event):
         self.currArtist = event.artist
@@ -101,7 +107,7 @@ class Grinder():
 
         self.ax1 = plt.axes([0.0, 0.5, 0.1, 0.075])
         self.b1 = Button(self.ax1, 'Submit')
-        self.b1.on_clicked(self.onButton)
+        self.b1.on_clicked(self.onSubmit)
 
         begin = ginput(1)
         end = ginput(1)
@@ -119,7 +125,8 @@ class Grinder():
             self.fig.canvas.mpl_connect('pick_event', self.onPick)
             self.fig.canvas.mpl_connect('key_press_event', self.onKey)
 
-        self.fig.canvas.draw()
+        # self.fig.canvas.draw()
+        plt.show()
 
     def setFreezer(self, someFreezer):
         self.freezer = someFreezer
@@ -137,6 +144,5 @@ if __name__ == '__main__':
                           gS = 0)
     cad_grinder.setFreezer(myFreezer)
     cad_grinder.splitTrial('musLce0')
-    raw_input("<Hit enter to close")
-    plt.close(cad_grinder.fig)
 
+    raw_input("<Hit enter to close")

@@ -29,7 +29,7 @@ class Freezer():
 
         post_id = self.posts.insert(newTrial)
 
-        print post_id
+        print "Saving doc with _id: ", post_id
 
         sys.stdout.flush()
 
