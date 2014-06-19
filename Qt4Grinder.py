@@ -16,8 +16,9 @@ import matplotlib.pyplot as plt
 from Freezer import Freezer
 
 class Grinder(QMainWindow):
-    def __init__(self, expName, expDate, rawData, numTrials, gS, gD, parent=None):
+    def __init__(self, expName, expDate, rawData, numTrials, gS, gD, analyst, parent=None):
         # Metadata into properties
+        self.analyst = analyst
         self.expDate = expDate
         self.expName = expName
         self.rawData = rawData
@@ -107,9 +108,7 @@ class Grinder(QMainWindow):
         self.endlines = []
 
 
-        if (self.rawData.shape[0]):
-            print('ERROR!: Empty data file')
-        if (self.numTrials <= 1):
+        if (self.initCount != 0 and self.numTrials <= 1):
             print('ERROR!: Trials must be at least 1')
 
         maxL = 100
@@ -142,7 +141,8 @@ class Grinder(QMainWindow):
                                        expDate = self.expDate, \
                                        gD = self.gD, \
                                        gS = self.gS, \
-                                       trialData = eachTrial)
+                                       trialData = eachTrial,\
+                                       analyst = self.analyst)
 
     def onPick(self, event):
         self.currArtist = event.artist
@@ -220,7 +220,8 @@ def main():
                          rawData=rawFpga, \
                          numTrials=10, \
                          gD=0, \
-                         gS=0)
+                         gS=0, \
+                         analyst="Christoff Sulzenbacher")
     cadGrinder.setFreezer(myFreezer)
 
     cadGrinder.show()
