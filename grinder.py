@@ -1,5 +1,6 @@
 import matplotlib
-matplotlib.use('TkAgg')
+#matplotlib.use('TkAgg')
+matplotlib.use('Qt4Agg')
 from matplotlib.widgets import Button
 import pandas
 from pylab import ginput
@@ -25,7 +26,7 @@ def getYValueLimits(rawData, baseChannel):
 
 
 class Grinder():
-    def __init__(self, expName = '', expDate = '', rawData, numTrials, gS, gD):
+    def __init__(self, expName, expDate, rawData, numTrials, gS, gD):
         self.expDate = expDate
         self.expName = expName
         self.rawData = rawData
@@ -51,10 +52,10 @@ class Grinder():
 
         # Rewrite this line as a return from the button
         #+++ Verify with subplot
-        self.allTraces = [[self.rawData[baseChannel][self.iBegins[i]:self.iEnds[i]]] \
+        self.allTraces = [[self.rawData[self.baseChannel][self.iBegins[i]:self.iEnds[i]]] \
                      for i in xrange(i)]
 
-        for eachTrial in self.numTrials:
+        for eachTrial in self.allTraces:
             self.freezer.sendToFreezer(expName = self.expName, \
                                   expDate = self.expDate, \
                                   gD = self.gD,\
@@ -90,7 +91,9 @@ class Grinder():
         self.fig.canvas.draw()
 
     def splitTrial(self, baseChannel):
-        self.ax.plot(self.rawData[baseChannel])
+        self.baseChannel = baseChannel
+
+        self.ax.plot(self.rawData[self.baseChannel])
         numElements = self.rawData.shape[0]
 
         self.ax1 = plt.axes([0.0, 0.5, 0.1, 0.075])
@@ -107,7 +110,7 @@ class Grinder():
 
 
 
-        [minL, maxL] = getYValueLimits(self.rawData, baseChannel)
+        [minL, maxL] = getYValueLimits(self.rawData, self.baseChannel)
         for iLine in xrange(self.numTrials):
             self.endlines.append(self.ax.axvline(self.iEnds[iLine], 0, maxL, color='k', picker=5))
             self.fig.canvas.mpl_connect('pick_event', self.onPick)
@@ -130,9 +133,7 @@ if __name__ == '__main__':
                           gD = 0,\
                           gS = 0)
     cad_grinder.setFreezer(myFreezer)
-    results = cad_grinder.splitTrial('musLce0')
-    print results[0]
-    print len(results)
+    cad_grinder.splitTrial('musLce0')
     raw_input("<Hit enter to close")
     plt.close(cad_grinder.fig)
 
