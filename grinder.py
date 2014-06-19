@@ -24,16 +24,24 @@ def getYValueLimits(rawData, baseChannel):
 
 
 class Grinder():
-    def __init__(self, rawData):
+    def __init__(self, rawData, numTrials):
         self.fig, self.ax = plt.subplots()
         self.currArtist = self.ax
 
         self.endlines = []
+        self.iBegins = []
+        self.iEnds = []
 
         self.rawData = rawData
+        self.numTrials = numTrials
 
     def onButton(self, event):
-        print [l.get_data() for l in self.endlines]
+        self.iEnds = [l.get_data()[0][0] for l in self.endlines]
+        for i in xrange(self.numTrials - 1):
+            self.iBegins[i+1] = self.iEnds[i] + 1
+
+        print self.iBegins
+        print self.iEnds
 
     def onPick(self, event):
         self.currArtist = event.artist
@@ -64,7 +72,7 @@ class Grinder():
         self.fig.canvas.draw()
 
 
-    def splitTrial(self, numTrials, baseChannel):
+    def splitTrial(self, baseChannel):
         self.ax.plot(self.rawData[baseChannel])
         numElements = self.rawData.shape[0]
 
@@ -78,16 +86,15 @@ class Grinder():
 
         length = int(end[0][0] - begin[0][0])
 
-        iBegins = [int(begin[0][0]) + i * length for i in xrange(numTrials)]
-        iEnds = [int(begin[0][0]) + (i + 1) * length - 1 for i in xrange(numTrials)]
-        print(iEnds)
+        self.iBegins = [int(begin[0][0]) + i * length for i in xrange(self.numTrials)]
+        self.iEnds = [int(begin[0][0]) + (i + 1) * length - 1 for i in xrange(self.numTrials)]
 
-        allTraces = [[self.rawData[baseChannel][iBegins[i]:iEnds[i]]] \
+        allTraces = [[self.rawData[baseChannel][self.iBegins[i]:self.iEnds[i]]] \
                      for i in xrange(i)]
 
         [minL, maxL] = getYValueLimits(self.rawData, baseChannel)
-        for iLine in xrange(numTrials):
-            self.endlines.append(self.ax.axvline(iEnds[iLine], 0, maxL, color='k', picker=5))
+        for iLine in xrange(self.numTrials):
+            self.endlines.append(self.ax.axvline(self.iEnds[iLine], 0, maxL, color='k', picker=5))
             self.fig.canvas.mpl_connect('pick_event', self.onPick)
             self.fig.canvas.mpl_connect('key_press_event', self.onKey)
 
@@ -98,8 +105,8 @@ class Grinder():
 
 if __name__ == '__main__':
     rawFpga = pandas.read_csv('fpga')
-    cad_grinder = Grinder(rawFpga)
-    results = cad_grinder.splitTrial(10, 'musLce0')
+    cad_grinder = Grinder(rawFpga, 10)
+    results = cad_grinder.splitTrial('musLce0')
     print results[0]
     print len(results)
     raw_input("<Hit enter to close")
