@@ -31,11 +31,13 @@ class Grinder(QMainWindow):
         self.iEnds = []
         self.currArtist = None
         self.baseChannel = 'musLce0'
+        self.initCount = 0
 
         QMainWindow.__init__(self, parent)
         # self.showMaximized()
         self.create_main_frame()
         self.drawTrial()
+        self.onSetNumTrials()
 
     def create_main_frame(self):
         self.main_frame = QWidget()
@@ -97,26 +99,22 @@ class Grinder(QMainWindow):
         for eachLine in self.endlines:
             self.ax.lines.remove(eachLine)
 
-        self.numTrials = int(self.textbox.text())
+        if (self.initCount == 0):
+            self.numTrials = 10
+            self.initCount = self.initCount + 1
+        else:
+            self.numTrials = int(self.textbox.text())
         self.endlines = []
 
-        maxL = 100
 
-        # Get the length of the X axis data
-        # Total length is the length of the whole thing minus the starting point
-        # make the length of the intervals a function of total length and
-        # number of trials.
-        print('TEST')
         if (self.rawData.shape[0]):
             print('ERROR!: Empty data file')
         if (self.numTrials <= 1):
             print('ERROR!: Trials must be at least 1')
 
+        maxL = 100
         initialIndex = 0    # was 100
         length = (self.rawData.shape[0] - initialIndex) / self.numTrials
-        print(length)
-
-
 
         self.iBegins = [initialIndex + i * length for i in xrange(self.numTrials)]
         self.iEnds = [initialIndex + (i + 1) * length - 1 for i in xrange(self.numTrials)]
