@@ -13,6 +13,7 @@ from PyQt4.QtGui import *
 import pandas
 import matplotlib.pyplot as plt
 
+from Freezer import Freezer
 
 class Grinder(QMainWindow):
     def __init__(self, expName, expDate, rawData, numTrials, gS, gD, parent=None):
@@ -32,7 +33,7 @@ class Grinder(QMainWindow):
         self.baseChannel = 'musLce0'
 
         QMainWindow.__init__(self, parent)
-        self.showMaximized()
+        # self.showMaximized()
         self.create_main_frame()
         self.drawTrial()
 
@@ -91,7 +92,21 @@ class Grinder(QMainWindow):
         self.setCentralWidget(self.main_frame)
 
     def onSetNumTrials(self):
-        pass
+        for eachLine in self.endlines:
+            self.ax.lines.remove(eachLine)
+
+        self.numTrials = int(self.textbox.text())
+        self.endlines = []
+
+        length = 200
+        maxL = 100
+
+        self.iBegins = [100 + i * length for i in xrange(self.numTrials)]
+        self.iEnds = [100 + (i + 1) * length - 1 for i in xrange(self.numTrials)]
+
+        for i in xrange(self.numTrials):
+            self.endlines.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=5))
+        self.canvas.draw()
 
     def onSubmit(self):
         self.iEnds = [l.get_data()[0][0] for l in self.endlines]
@@ -170,6 +185,8 @@ class Grinder(QMainWindow):
         for iLine in xrange(self.numTrials):
             self.endlines.append(self.ax.axvline(self.iEnds[iLine], 0, maxL, color='k', picker=5))
 
+    def setFreezer(self, someFreezer):
+        self.freezer = someFreezer
 
     def on_key_press(self, event):
         print('you pressed', event.key)
@@ -181,6 +198,8 @@ class Grinder(QMainWindow):
 def main():
     app = QApplication(sys.argv)
 
+    myFreezer = Freezer('mongodb://diophantus.usc.edu:27017/')
+
     rawFpga = pandas.read_csv('fpga')
     cadGrinder = Grinder(expName='ramp-n-hold', \
                          expDate='20140514', \
@@ -188,6 +207,8 @@ def main():
                          numTrials=10, \
                          gD=0, \
                          gS=0)
+    cadGrinder.setFreezer(myFreezer)
+
     cadGrinder.show()
     app.exec_()
 
