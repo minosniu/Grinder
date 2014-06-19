@@ -91,6 +91,8 @@ class Grinder(QMainWindow):
         self.main_frame.setLayout(vbox)
         self.setCentralWidget(self.main_frame)
 
+
+    # Fix this function first and then call it at the load
     def onSetNumTrials(self):
         for eachLine in self.endlines:
             self.ax.lines.remove(eachLine)
@@ -98,11 +100,26 @@ class Grinder(QMainWindow):
         self.numTrials = int(self.textbox.text())
         self.endlines = []
 
-        length = 200
         maxL = 100
 
-        self.iBegins = [100 + i * length for i in xrange(self.numTrials)]
-        self.iEnds = [100 + (i + 1) * length - 1 for i in xrange(self.numTrials)]
+        # Get the length of the X axis data
+        # Total length is the length of the whole thing minus the starting point
+        # make the length of the intervals a function of total length and
+        # number of trials.
+        print('TEST')
+        if (self.rawData.shape[0]):
+            print('ERROR!: Empty data file')
+        if (self.numTrials <= 1):
+            print('ERROR!: Trials must be at least 1')
+
+        initialIndex = 0    # was 100
+        length = (self.rawData.shape[0] - initialIndex) / self.numTrials
+        print(length)
+
+
+
+        self.iBegins = [initialIndex + i * length for i in xrange(self.numTrials)]
+        self.iEnds = [initialIndex + (i + 1) * length - 1 for i in xrange(self.numTrials)]
 
         for i in xrange(self.numTrials):
             self.endlines.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=5))
@@ -128,7 +145,6 @@ class Grinder(QMainWindow):
                                        gD = self.gD, \
                                        gS = self.gS, \
                                        trialData = eachTrial)
-
 
     def onPick(self, event):
         self.currArtist = event.artist
