@@ -4,6 +4,7 @@ from matplotlib.widgets import Button
 import pandas
 from pylab import ginput
 import matplotlib.pyplot as plt
+from Freezer import Freezer
 # unit test later
 
 def getYValueLimits(rawData, baseChannel):
@@ -24,7 +25,14 @@ def getYValueLimits(rawData, baseChannel):
 
 
 class Grinder():
-    def __init__(self, rawData, numTrials):
+    def __init__(self, expName = '', expDate = '', rawData, numTrials, gS, gD):
+        self.expDate = expDate
+        self.expName = expName
+        self.rawData = rawData
+        self.numTrials = numTrials
+        self.gD = gD
+        self.gS = gS
+
         self.fig, self.ax = plt.subplots()
         self.currArtist = self.ax
 
@@ -32,16 +40,26 @@ class Grinder():
         self.iBegins = []
         self.iEnds = []
 
-        self.rawData = rawData
-        self.numTrials = numTrials
+
+    def setNumTrials(self):
+        self.numTrials = int(raw_input('How many trials do you see?'))
 
     def onButton(self, event):
         self.iEnds = [l.get_data()[0][0] for l in self.endlines]
         for i in xrange(self.numTrials - 1):
             self.iBegins[i+1] = self.iEnds[i] + 1
 
-        print self.iBegins
-        print self.iEnds
+        # Rewrite this line as a return from the button
+        #+++ Verify with subplot
+        self.allTraces = [[self.rawData[baseChannel][self.iBegins[i]:self.iEnds[i]]] \
+                     for i in xrange(i)]
+
+        for eachTrial in self.numTrials:
+            self.freezer.sendToFreezer(expName = self.expName, \
+                                  expDate = self.expDate, \
+                                  gD = self.gD,\
+                                  gS = self.gS, \
+                                  trialData = eachTrial)
 
     def onPick(self, event):
         self.currArtist = event.artist
@@ -71,7 +89,6 @@ class Grinder():
             self.currArtist.set_data(new_xs, ys)
         self.fig.canvas.draw()
 
-
     def splitTrial(self, baseChannel):
         self.ax.plot(self.rawData[baseChannel])
         numElements = self.rawData.shape[0]
@@ -79,7 +96,6 @@ class Grinder():
         self.ax1 = plt.axes([0.0, 0.5, 0.1, 0.075])
         self.b1 = Button(self.ax1, 'Submit')
         self.b1.on_clicked(self.onButton)
-
 
         begin = ginput(1)
         end = ginput(1)
@@ -89,8 +105,7 @@ class Grinder():
         self.iBegins = [int(begin[0][0]) + i * length for i in xrange(self.numTrials)]
         self.iEnds = [int(begin[0][0]) + (i + 1) * length - 1 for i in xrange(self.numTrials)]
 
-        allTraces = [[self.rawData[baseChannel][self.iBegins[i]:self.iEnds[i]]] \
-                     for i in xrange(i)]
+
 
         [minL, maxL] = getYValueLimits(self.rawData, baseChannel)
         for iLine in xrange(self.numTrials):
@@ -100,12 +115,21 @@ class Grinder():
 
         self.fig.canvas.draw()
 
-        return allTraces
+    def setFreezer(self, someFreezer):
+        self.freezer = someFreezer
+
 
 
 if __name__ == '__main__':
+    myFreezer = Freezer('mongodb://diophantus.usc.edu:27017/')
     rawFpga = pandas.read_csv('fpga')
-    cad_grinder = Grinder(rawFpga, 10)
+    cad_grinder = Grinder(expName = 'ramp-n-hold',\
+                          expDate = '20140514',\
+                          rawData = rawFpga,\
+                          numTrials = 10,\
+                          gD = 0,\
+                          gS = 0)
+    cad_grinder.setFreezer(myFreezer)
     results = cad_grinder.splitTrial('musLce0')
     print results[0]
     print len(results)
