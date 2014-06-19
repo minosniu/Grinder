@@ -53,7 +53,10 @@ class Grinder():
         # Rewrite this line as a return from the button
         #+++ Verify with subplot
         self.allTraces = [[self.rawData[self.baseChannel][self.iBegins[i]:self.iEnds[i]]] \
-                     for i in xrange(i)]
+                     for i in xrange(self.numTrials)]
+
+
+        print("Trial Num:", len(self.allTraces))
 
         for eachTrial in self.allTraces:
             self.freezer.sendToFreezer(expName = self.expName, \
