@@ -15,12 +15,13 @@ class Freezer():
         #self.collection = self.db.testCollection
 
 
-    def sendToFreezer(self, expName, expDate, gS, gD, trialData):
+    def sendToFreezer(self, expName, expDate, gS, gD, trialData, analyst):
         pickledTrialData = pickle.dumps(trialData)
 
         newTrial={
             "expt" : expName,
             "date" : expDate,
+            "analyst" : analyst,
             "gamma_s" : gS,
             "gamma_d" : gD,
             "trace" : pickledTrialData,
