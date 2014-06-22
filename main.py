@@ -19,7 +19,8 @@ from Grinder import Grinder
 
 app = QApplication(sys.argv)
 
-myFreezer = Freezer('mongodb://diophantus.usc.edu:27017/')
+# myFreezer = Freezer('mongodb://diophantus.usc.edu:27017/')
+myFreezer = Freezer('mongodb://localhost:27017/')
 
 rawFpga = pandas.read_csv('/Users/minosniu/Dropbox/ShareCadaverDataNI/data_cadaver_0514/rh_gd0_gs0/20140514160633_fpga')
 cadGrinder = Grinder(expName='ramp-n-hold', \

@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+__author__ = "minosniu"
+
 import sys
 
 import numpy as np
@@ -36,11 +38,11 @@ class Grinder(QMainWindow):
 
         QMainWindow.__init__(self, parent)
         # self.showMaximized()
-        self.create_main_frame()
+        self.createMainFrame()
         self.drawTrial()
         self.onSetNumTrials()
 
-    def create_main_frame(self):
+    def createMainFrame(self):
         self.main_frame = QWidget()
 
         self.fig = Figure((5.0, 4.0), dpi=100)
@@ -81,8 +83,8 @@ class Grinder(QMainWindow):
         #
         hbox = QHBoxLayout()
 
-        for w in [  self.textbox, self.submitButton, self.grid_cb,
-                    slider_label, self.slider]:
+        for w in [self.textbox, self.submitButton, self.grid_cb,
+                  slider_label, self.slider]:
             hbox.addWidget(w)
             hbox.setAlignment(w, Qt.AlignVCenter)
 
@@ -136,9 +138,9 @@ class Grinder(QMainWindow):
 
         # Rewrite this line as a return from the button
         #+++ Verify with subplot
-        self.allTraces = [[self.rawData[:][self.iBegins[i]:self.iEnds[i]]] \
-                          for i in xrange(self.numTrials)]
 
+        self.allTraces = [self.rawData[self.iBegins[i]:self.iEnds[i]] \
+                          for i in xrange(self.numTrials)]
 
         print("Total trials:", len(self.allTraces))
 
@@ -215,7 +217,7 @@ def main():
                          numTrials=10, \
                          gD=0, \
                          gS=0, \
-                         analyst="Christoff Sulzenbacher")
+                         analyst="Dummy analyst")
     cadGrinder.setFreezer(myFreezer)
 
     cadGrinder.show()
