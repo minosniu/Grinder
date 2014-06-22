@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE Project SYSTEM "Project-4.6.dtd">
 <!-- eric4 project file for project CadGrinder -->
-<!-- Saved: 2014-06-22, 12:55:47 -->
+<!-- Saved: 2014-06-22, 13:18:34 -->
 <!-- Copyright (C) 2014 ,  -->
 <Project version="4.6">
   <Language>en</Language>
@@ -17,9 +17,10 @@
     <Source>main.py</Source>
     <Source>Watcher.py</Source>
     <Source>__init__.py</Source>
+    <Source>ui/Ui_GrinderGUI.py</Source>
   </Sources>
   <Forms>
-    <Form>GrinderGUI.ui</Form>
+    <Form>ui/GrinderGUI.ui</Form>
   </Forms>
   <Translations>
   </Translations>
