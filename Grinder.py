@@ -42,8 +42,7 @@ class Grinder(QMainWindow):
         QMainWindow.__init__(self, parent)
         # self.showMaximized()
         self.createMainFrame()
-        self.drawTrial()
-        self.setTrials()
+        self.setNumTrials()
 
     def createMainFrame(self):
         self.main_frame = QWidget()
@@ -61,6 +60,13 @@ class Grinder(QMainWindow):
         self.canvas.mpl_connect('button_press_event', self.onMouseDown)
         self.canvas.mpl_connect('button_release_event', self.onMouseUp)
         self.canvas.mpl_connect('motion_notify_event', self.onMouseMotion)
+
+
+        # Initial draw
+        self.fig.clear()
+        self.fig.hold(True)
+        self.ax = self.fig.add_subplot(111)
+        self.ax.plot(self.rawData[self.baseChannel])
 
         # Other GUI controls
         #
@@ -122,7 +128,7 @@ class Grinder(QMainWindow):
         self.canvas.draw()
 
     # IOC for all trials
-    def setTrials(self, n = 10):
+    def setNumTrials(self, n = 2):
         for eachLine in self.allEndLines:
             self.ax.lines.remove(eachLine)
 
@@ -167,26 +173,6 @@ class Grinder(QMainWindow):
                                        trialData=eachTrial, \
                                        analystName=self.analystName)
 
-    def drawTrial(self):
-        self.fig.clear()
-        self.fig.hold(True)
-        self.ax = self.fig.add_subplot(111)
-        self.ax.plot(self.rawData[self.baseChannel])
-        self.canvas.draw()
-
-        begin = [[1000, 0]]
-        end = [[1400, 0]]
-
-        length = int(end[0][0] - begin[0][0])
-
-        self.iBegins = [int(begin[0][0]) + i * length for i in xrange(self.numTrials)]
-        self.iEnds = [int(begin[0][0]) + (i + 1) * length - 1 for i in xrange(self.numTrials)]
-
-        maxL = 100
-
-        for iLine in xrange(self.numTrials):
-            self.allEndLines.append(self.ax.axvline(self.iEnds[iLine], 0, maxL, color='k', picker=5))
-
     def setFreezer(self, someFreezer):
         self.freezer = someFreezer
 
@@ -209,7 +195,7 @@ class Grinder(QMainWindow):
     def onNumTrialBox(self):
         """Update how many trials the analyst sees
         """
-        self.setTrials(int(self.textbox.text()))
+        self.setNumTrials(int(self.textbox.text()))
 
     def onSubmit(self):
         # Split trials into memory based on user input
@@ -248,7 +234,7 @@ class Grinder(QMainWindow):
         self.canvas.draw()
 
 
-def main():
+if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     myFreezer = Freezer('mongodb://diophantus.usc.edu:27017/')
@@ -257,7 +243,7 @@ def main():
     cadGrinder = Grinder(expName='ramp-n-hold', \
                          expDate='20140514', \
                          rawData=rawFpga, \
-                         numTrials=10, \
+                         numTrials=2, \
                          gammaDyn=0, \
                          gammaSta=0, \
                          analystName="Dummy analyst")
@@ -265,8 +251,3 @@ def main():
 
     cadGrinder.show()
     app.exec_()
-
-
-if __name__ == "__main__":
-    main()
-
