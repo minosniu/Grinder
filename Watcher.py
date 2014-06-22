@@ -22,18 +22,22 @@ class Watcher(QMainWindow):
     def __init__(self, freezer, parent=None):
         """Constructor for Viewer"""
         self.freezer = freezer
+        self.numTrials = 0
+        self.currTrial = 0
 
         QMainWindow.__init__(self, parent)
         # self.showMaximized()
         self.createMainFrame()
         # self.drawTrial()
 
-    def queryData(self):
+    def queryData(self, queryStr):
         """Query some data from freezer
         """
         self.allTrials = []
-        for post in self.freezer.posts.find({"analyst": "Minos Niu"}):
+        for post in self.freezer.posts.find(eval(queryStr)):
             self.allTrials.append(pickle.loads(post['trace']))
+        self.numTrials = len(self.allTrials)
+        print "Found", self.numTrials, "trials."
 
     def createMainFrame(self):
         self.main_frame = QWidget()
@@ -48,13 +52,19 @@ class Watcher(QMainWindow):
 
         # Other GUI controls
         #
-        self.textbox = QLineEdit("Enter num of trials")
+        self.textbox = QLineEdit('{"analyst": "Minos Niu"}')
         self.textbox.selectAll()
         self.textbox.setMinimumWidth(200)
         # self.connect(self.textbox, SIGNAL('editingFinished ()'), self.onSetNumTrials)
 
         self.submitButton = QPushButton("&Submit")
         self.connect(self.submitButton, SIGNAL('clicked()'), self.onSubmit)
+
+        self.fwdButton = QPushButton("&>>")
+        self.connect(self.fwdButton, SIGNAL('clicked()'), self.onFwd)
+
+        self.bwdButton = QPushButton("&<<")
+        self.connect(self.bwdButton, SIGNAL('clicked()'), self.onBwd)
 
         self.grid_cb = QCheckBox("Show &Grid")
         self.grid_cb.setChecked(False)
@@ -73,8 +83,9 @@ class Watcher(QMainWindow):
         #
         hbox = QHBoxLayout()
 
-        for w in [self.textbox, self.submitButton, self.grid_cb,
-                  slider_label, self.slider]:
+        for w in [self.textbox, self.submitButton, \
+                  self.bwdButton, self.fwdButton, \
+                  self.grid_cb, slider_label, self.slider]:
             hbox.addWidget(w)
             hbox.setAlignment(w, Qt.AlignVCenter)
 
@@ -86,23 +97,34 @@ class Watcher(QMainWindow):
         self.main_frame.setLayout(vbox)
         self.setCentralWidget(self.main_frame)
 
+    def onFwd(self):
+        """Go forward 1 trial"""
+        self.currTrial = min(self.currTrial + 1, self.numTrials - 1)
+        self.onDraw()
+
+    def onBwd(self):
+        """Go forward 1 trial"""
+        self.currTrial = max(self.currTrial - 1, 0)
+        self.onDraw()
+
     def onDraw(self):
         self.fig.clear()
         self.fig.hold(True)
 
         self.ax = self.fig.add_subplot(211)
-        self.ax.plot(self.allTrials[0]['musLce0'])
+        self.ax.plot(self.allTrials[self.currTrial]['musLce0'])
 
         self.ax = self.fig.add_subplot(212)
-        self.ax.plot(self.allTrials[0]['emg0'])
+        self.ax.plot(self.allTrials[self.currTrial]['emg0'])
         self.canvas.draw()
 
+    def resetPlot(self):
+        """Clean the counter, etc."""
+        self.currTrial = 0
 
     def onSubmit(self):
-        self.queryData()
-        for trial in self.allTrials:
-            print(len(trial['musLce0']))
-
+        self.queryData(str(self.textbox.text()))
+        self.resetPlot()
         self.onDraw()
         # print(self.allTrials[0].musLce0)
 
