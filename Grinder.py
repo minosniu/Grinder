@@ -70,10 +70,11 @@ class Grinder(QMainWindow):
 
         # Other GUI controls
         #
-        self.textbox = QLineEdit("Enter num of trials")
-        self.textbox.selectAll()
-        self.textbox.setMinimumWidth(200)
-        self.connect(self.textbox, SIGNAL('editingFinished ()'), self.onNumTrialBox)
+        self.numTrialBox = QSpinBox()
+        self.numTrialBox.setMinimum(1)
+        self.numTrialBox.setValue(2)
+        self.numTrialBox.setMinimumWidth(200)
+        self.connect(self.numTrialBox, SIGNAL('valueChanged(int)'), self.onNumTrialBox)
 
         self.submitButton = QPushButton("&Submit")
         self.connect(self.submitButton, SIGNAL('clicked()'), self.onSubmit)
@@ -95,7 +96,7 @@ class Grinder(QMainWindow):
         #
         hbox = QHBoxLayout()
 
-        for w in [self.textbox, self.submitButton, self.grid_cb,
+        for w in [self.numTrialBox, self.submitButton, self.grid_cb,
                   slider_label, self.slider]:
             hbox.addWidget(w)
             hbox.setAlignment(w, Qt.AlignVCenter)
@@ -192,10 +193,10 @@ class Grinder(QMainWindow):
     def onSlider(self):
         pass
 
-    def onNumTrialBox(self):
+    def onNumTrialBox(self, value):
         """Update how many trials the analyst sees
         """
-        self.setNumTrials(int(self.textbox.text()))
+        self.setNumTrials(value)
 
     def onSubmit(self):
         # Split trials into memory based on user input
