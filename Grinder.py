@@ -42,6 +42,19 @@ class Grinder(QMainWindow):
         self.drawTrial()
         self.onSetNumTrials()
 
+    def onMouseDown(self, event):
+        self.isDragging = True
+
+    def onMouseUp(self, event):
+        self.isDragging = False
+
+    def onMouseMotion(self, event):
+        if self.isDragging:
+            xs, ys = self.currArtist.get_data()
+            new_xs = [event.xdata for xx in xs]
+            self.currArtist.set_data(new_xs, ys)
+            self.canvas.draw()
+
     def createMainFrame(self):
         self.main_frame = QWidget()
 
@@ -55,6 +68,9 @@ class Grinder(QMainWindow):
 
         self.canvas.mpl_connect('key_press_event', self.onKey)
         self.canvas.mpl_connect('pick_event', self.onPick)
+        self.canvas.mpl_connect('button_press_event', self.onMouseDown)
+        self.canvas.mpl_connect('button_relsease_event', self.onMouseUp)
+        self.canvas.mpl_connect('motion_notify_event', self.onMouseMotion)
 
         # Other GUI controls
         #
