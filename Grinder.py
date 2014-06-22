@@ -16,6 +16,7 @@ import pandas
 import matplotlib.pyplot as plt
 
 from Freezer import Freezer
+from Trial import Trial
 
 class Grinder(QMainWindow):
     def __init__(self, expName, expDate, rawData, numTrials, gammaSta, gammaDyn, analystName, parent=None):
@@ -29,10 +30,11 @@ class Grinder(QMainWindow):
         self.gammaSta = gammaSta
 
         # Some useful stuff
-        self.allTrials = []
+        self.allEndLines = []
         self.iBegins = []
         self.iEnds = []
-        self.currArtist = None
+        self.currEndLine = None
+        self.currEndLineId = None
         self.baseChannel = 'musLce0'
         self.initCount = 0
         self.isDragging = False
@@ -41,20 +43,7 @@ class Grinder(QMainWindow):
         # self.showMaximized()
         self.createMainFrame()
         self.drawTrial()
-        self.onSetNumTrials()
-
-    def onMouseDown(self, event):
-        self.isDragging = True
-
-    def onMouseUp(self, event):
-        self.isDragging = False
-
-    def onMouseMotion(self, event):
-        if self.isDragging:
-            xs, ys = self.currArtist.get_data()
-            new_xs = [event.xdata for xx in xs]
-            self.currArtist.set_data(new_xs, ys)
-            self.canvas.draw()
+        self.setTrials()
 
     def createMainFrame(self):
         self.main_frame = QWidget()
@@ -78,7 +67,7 @@ class Grinder(QMainWindow):
         self.textbox = QLineEdit("Enter num of trials")
         self.textbox.selectAll()
         self.textbox.setMinimumWidth(200)
-        self.connect(self.textbox, SIGNAL('editingFinished ()'), self.onSetNumTrials)
+        self.connect(self.textbox, SIGNAL('editingFinished ()'), self.onNumTrialBox)
 
         self.submitButton = QPushButton("&Submit")
         self.connect(self.submitButton, SIGNAL('clicked()'), self.onSubmit)
@@ -113,24 +102,37 @@ class Grinder(QMainWindow):
         self.main_frame.setLayout(vbox)
         self.setCentralWidget(self.main_frame)
 
-    def onGrid(self):
-        pass
+    def setEndLine(self, new_x):
+        minLen = 50
+        if self.currEndLineId > 0:
+            leftx, lefty = self.allEndLines[self.currEndLineId - 1].get_data()
+            lbound = leftx[0] + minLen
+        else:
+            lbound = minLen
 
-    def onSlider(self):
-        pass
+        if self.currEndLineId < self.numTrials - 1:
+            rightx, righty = self.allEndLines[self.currEndLineId + 1].get_data()
+            rbound = rightx[0] - minLen
+        else:
+            rbound = len(self.rawData) - minLen
 
-    # Fix this function first and then call it at the load
-    def onSetNumTrials(self):
-        for eachLine in self.allTrials:
+        xs, ys = self.currEndLine.get_data()
+        new_xs = [min(rbound, max(lbound, new_x)) for xx in xs]
+        self.currEndLine.set_data(new_xs, ys)
+        self.canvas.draw()
+
+    # IOC for all trials
+    def setTrials(self, n = 10):
+        for eachLine in self.allEndLines:
             self.ax.lines.remove(eachLine)
 
         if (self.initCount == 0):
             self.numTrials = 10
             self.initCount = self.initCount + 1
         else:
-            self.numTrials = int(self.textbox.text())
-        self.allTrials = []
+            self.numTrials = n
 
+        self.allEndLines = []
 
         if (self.initCount != 0 and self.numTrials <= 1):
             print('ERROR!: Trials must be at least 1')
@@ -143,60 +145,27 @@ class Grinder(QMainWindow):
         self.iEnds = [initialIndex + (i + 1) * length - 1 for i in xrange(self.numTrials)]
 
         for i in xrange(self.numTrials):
-            self.allTrials.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=5))
+            self.allEndLines.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=5))
 
-        self.beginline = self.ax.axvline(0, 0, maxL, color='r', linewidth=5)
+        self.beginLine = self.ax.axvline(0, 0, maxL, color='r', linewidth=5)
         self.canvas.draw()
 
-    def onSubmit(self):
-        self.iEnds = [l.get_data()[0][0] for l in self.allTrials]
+    def setAllTrials(self):
+        self.iEnds = [l.get_data()[0][0] for l in self.allEndLines]
         for i in xrange(self.numTrials - 1):
-            self.iBegins[i+1] = self.iEnds[i] + 1
-
-        # Rewrite this line as a return from the button
-        #+++ Verify with subplot
-
+            self.iBegins[i + 1] = self.iEnds[i] + 1
         self.allTraces = [self.rawData[self.iBegins[i]:self.iEnds[i]] \
                           for i in xrange(self.numTrials)]
+        print("You identified %d trials:" % len(self.allTraces))
 
-        print("Total trials:", len(self.allTraces))
-
-        # Save to Freezer (MongoDB database)
+    def freezeAllTrials(self):
         for eachTrial in self.allTraces:
-            self.freezer.sendToFreezer(expName = self.expName, \
-                                       expDate = self.expDate, \
-                                       gammaDyn = self.gammaDyn, \
-                                       gammaSta = self.gammaSta, \
-                                       trialData = eachTrial, \
-                                       analystName = self.analystName)
-
-    def onPick(self, event):
-        self.currArtist = event.artist
-        for line in self.allTrials:
-            if (line == self.currArtist):
-                line.set_color('r')
-            else:
-                line.set_color('k')
-        self.canvas.draw()
-
-    def onKey(self, event):
-        if event.key in '[':
-            xs, ys = self.currArtist.get_data()
-            new_xs = [xx - 20 for xx in xs]
-            self.currArtist.set_data(new_xs, ys)
-        elif event.key in ']':
-            xs, ys = self.currArtist.get_data()
-            new_xs = [xx + 20 for xx in xs]
-            self.currArtist.set_data(new_xs, ys)
-        elif event.key in '{':
-            xs, ys = self.currArtist.get_data()
-            new_xs = [xx - 100 for xx in xs]
-            self.currArtist.set_data(new_xs, ys)
-        elif event.key in '}':
-            xs, ys = self.currArtist.get_data()
-            new_xs = [xx + 100 for xx in xs]
-            self.currArtist.set_data(new_xs, ys)
-        self.canvas.draw()
+            self.freezer.sendToFreezer(expName=self.expName, \
+                                       expDate=self.expDate, \
+                                       gammaDyn=self.gammaDyn, \
+                                       gammaSta=self.gammaSta, \
+                                       trialData=eachTrial, \
+                                       analystName=self.analystName)
 
     def drawTrial(self):
         self.fig.clear()
@@ -216,10 +185,67 @@ class Grinder(QMainWindow):
         maxL = 100
 
         for iLine in xrange(self.numTrials):
-            self.allTrials.append(self.ax.axvline(self.iEnds[iLine], 0, maxL, color='k', picker=5))
+            self.allEndLines.append(self.ax.axvline(self.iEnds[iLine], 0, maxL, color='k', picker=5))
 
     def setFreezer(self, someFreezer):
         self.freezer = someFreezer
+
+    def onMouseDown(self, event):
+        self.isDragging = True
+
+    def onMouseUp(self, event):
+        self.isDragging = False
+
+    def onMouseMotion(self, event):
+        if self.isDragging:
+            self.setEndLine(event.xdata)
+
+    def onGrid(self):
+        pass
+
+    def onSlider(self):
+        pass
+
+    def onNumTrialBox(self):
+        """Update how many trials the analyst sees
+        """
+        self.setTrials(int(self.textbox.text()))
+
+    def onSubmit(self):
+        # Split trials into memory based on user input
+        self.setAllTrials()
+
+        # Save trials to Freezer (MongoDB database)
+        self.freezeAllTrials()
+
+    def onPick(self, event):
+        self.currEndLine = event.artist
+        for i, line in enumerate(self.allEndLines):
+            if (line == self.currEndLine):
+                self.currEndLineId = i
+                line.set_color('r')
+            else:
+                line.set_color('k')
+        self.canvas.draw()
+
+    def onKey(self, event):
+        if event.key in '[':
+            xs, ys = self.currEndLine.get_data()
+            new_xs = [xx - 20 for xx in xs]
+            self.currEndLine.set_data(new_xs, ys)
+        elif event.key in ']':
+            xs, ys = self.currEndLine.get_data()
+            new_xs = [xx + 20 for xx in xs]
+            self.currEndLine.set_data(new_xs, ys)
+        elif event.key in '{':
+            xs, ys = self.currEndLine.get_data()
+            new_xs = [xx - 100 for xx in xs]
+            self.currEndLine.set_data(new_xs, ys)
+        elif event.key in '}':
+            xs, ys = self.currEndLine.get_data()
+            new_xs = [xx + 100 for xx in xs]
+            self.currEndLine.set_data(new_xs, ys)
+        self.canvas.draw()
 
 
 def main():
