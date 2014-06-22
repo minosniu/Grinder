@@ -52,10 +52,13 @@ class Watcher(QMainWindow):
 
         # Other GUI controls
         #
-        self.textbox = QLineEdit('{"analyst": "Minos Niu"}')
+        self.textbox = QTextEdit("""{"analyst": "Minos Niu",
+                                     "gamma_s": 100,
+                                     "gamma_d": 100}
+                                 """)
         self.textbox.selectAll()
         self.textbox.setMinimumWidth(200)
-        # self.connect(self.textbox, SIGNAL('editingFinished ()'), self.onSetNumTrials)
+        self.connect(self.textbox, SIGNAL('editingFinished ()'), self.onSubmit)
 
         self.submitButton = QPushButton("&Submit")
         self.connect(self.submitButton, SIGNAL('clicked()'), self.onSubmit)
@@ -123,7 +126,7 @@ class Watcher(QMainWindow):
         self.currTrial = 0
 
     def onSubmit(self):
-        self.queryData(str(self.textbox.text()))
+        self.queryData(str(self.textbox.toPlainText()))
         self.resetPlot()
         self.onDraw()
         # print(self.allTrials[0].musLce0)
