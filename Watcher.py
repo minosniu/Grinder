@@ -35,7 +35,7 @@ class Watcher(QMainWindow):
         """
         self.allTrials = []
         for post in self.freezer.posts.find(eval(queryStr)):
-            self.allTrials.append(pickle.loads(post['trace']))
+            self.allTrials.append(pickle.loads(post['trialData']))
         self.numTrials = len(self.allTrials)
         print "Found", self.numTrials, "trials."
 
@@ -52,9 +52,9 @@ class Watcher(QMainWindow):
 
         # Other GUI controls
         #
-        self.textbox = QTextEdit("""{"analyst": "Minos Niu",
-                                     "gamma_s": 100,
-                                     "gamma_d": 100}
+        self.textbox = QTextEdit("""{"analystName": "Minos Niu",
+                                     "gammaDyn": 100,
+                                     "gammaSta": 100}
                                  """)
         self.textbox.selectAll()
         self.textbox.setMinimumWidth(200)
@@ -106,7 +106,7 @@ class Watcher(QMainWindow):
         self.onDraw()
 
     def onBwd(self):
-        """Go forward 1 trial"""
+        """Go backward 1 trial"""
         self.currTrial = max(self.currTrial - 1, 0)
         self.onDraw()
 
@@ -114,12 +114,13 @@ class Watcher(QMainWindow):
         self.fig.clear()
         self.fig.hold(True)
 
-        self.ax = self.fig.add_subplot(211)
-        self.ax.plot(self.allTrials[self.currTrial]['musLce0'])
+        if self.allTrials: # Not empty
+            self.ax = self.fig.add_subplot(211)
+            self.ax.plot(self.allTrials[self.currTrial]['musLce0'])
 
-        self.ax = self.fig.add_subplot(212)
-        self.ax.plot(self.allTrials[self.currTrial]['emg0'])
-        self.canvas.draw()
+            self.ax = self.fig.add_subplot(212)
+            self.ax.plot(self.allTrials[self.currTrial]['emg0'])
+            self.canvas.draw()
 
     def resetPlot(self):
         """Clean the counter, etc."""

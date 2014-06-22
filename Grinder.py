@@ -18,15 +18,15 @@ import matplotlib.pyplot as plt
 from Freezer import Freezer
 
 class Grinder(QMainWindow):
-    def __init__(self, expName, expDate, rawData, numTrials, gS, gD, analyst, parent=None):
+    def __init__(self, expName, expDate, rawData, numTrials, gammaSta, gammaDyn, analystName, parent=None):
         # Metadata into properties
-        self.analyst = analyst
+        self.analystName = analystName
         self.expDate = expDate
         self.expName = expName
         self.rawData = rawData
         self.numTrials = numTrials
-        self.gD = gD
-        self.gS = gS
+        self.gammaDyn = gammaDyn
+        self.gammaSta = gammaSta
 
         # Some useful stuff
         self.endlines = []
@@ -148,10 +148,10 @@ class Grinder(QMainWindow):
         for eachTrial in self.allTraces:
             self.freezer.sendToFreezer(expName = self.expName, \
                                        expDate = self.expDate, \
-                                       gD = self.gD, \
-                                       gS = self.gS, \
+                                       gammaDyn = self.gammaDyn, \
+                                       gammaSta = self.gammaSta, \
                                        trialData = eachTrial, \
-                                       analyst = self.analyst)
+                                       analystName = self.analystName)
 
     def onPick(self, event):
         self.currArtist = event.artist
@@ -215,9 +215,9 @@ def main():
                          expDate='20140514', \
                          rawData=rawFpga, \
                          numTrials=10, \
-                         gD=0, \
-                         gS=0, \
-                         analyst="Dummy analyst")
+                         gammaDyn=0, \
+                         gammaSta=0, \
+                         analystName="Dummy analyst")
     cadGrinder.setFreezer(myFreezer)
 
     cadGrinder.show()

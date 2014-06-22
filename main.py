@@ -21,9 +21,9 @@ cadGrinder = Grinder(expName='ramp-n-hold', \
                      expDate='20140514', \
                      rawData=rawFpga, \
                      numTrials=10, \
-                     gD=100, \
-                     gS=100, \
-                     analyst="Minos Niu")
+                     gammaDyn=100, \
+                     gammaSta=100, \
+                     analystName="Minos Niu")
 cadGrinder.setFreezer(myFreezer)
 
 cadGrinder.show()

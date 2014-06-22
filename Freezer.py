@@ -1,31 +1,31 @@
 __author__ = 'johnrocamora'
-import pandas as pd
-from pymongo import MongoClient
-from pylab import *
+import pymongo as mg
 import datetime
 import pickle
 import sys
 
 class Freezer():
     def __init__(self, addr):
-        self.client = MongoClient(addr)
-        self.db = self.client.johndb
-        self.posts = self.db.posts
+        try:
+            self.client = mg.MongoClient(addr)
+            self.db = self.client.johndb
+            self.posts = self.db.posts
+            print "Connected successfully!!!"
+        except mg.errors.ConnectionFailure, e:
+            print "%s: Could not connect to MongoDB: %s" % (e, addr)
 
-        #self.collection = self.db.testCollection
 
-
-    def sendToFreezer(self, expName, expDate, gS, gD, trialData, analyst):
+    def sendToFreezer(self, expName, expDate, gammaSta, gammaDyn, trialData, analystName):
         pickledTrialData = pickle.dumps(trialData)
 
         newTrial={
-            "expt" : expName,
-            "date" : expDate,
-            "analyst" : analyst,
-            "gamma_s" : gS,
-            "gamma_d" : gD,
-            "trace" : pickledTrialData,
-            "is_accepted" : True
+            "expName" : expName,
+            "expDate" : expDate,
+            "analystName" : analystName,
+            "gammaDyn" : gammaDyn,
+            "gammaSta" : gammaSta,
+            "trialData" : pickledTrialData,
+            "isAccepted" : True
         }
 
         post_id = self.posts.insert(newTrial)
