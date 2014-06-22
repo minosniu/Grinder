@@ -1,32 +1,24 @@
-import matplotlib
-matplotlib.use('TkAgg')
-# matplotlib.use('Qt4Agg')
-from matplotlib.widgets import Button
+from __future__ import print_function
+
+import sys
+
+import numpy as np
+from matplotlib.figure import Figure
+from matplotlib.backend_bases import key_press_handler
+from matplotlib.backends.backend_qt4agg import (
+    FigureCanvasQTAgg as FigureCanvas,
+    NavigationToolbar2QTAgg as NavigationToolbar)
+from PyQt4.QtCore import *
+from PyQt4.QtGui import *
 import pandas
-from pylab import ginput
 import matplotlib.pyplot as plt
+
 from Freezer import Freezer
-# unit test later
 
-def getYValueLimits(rawData, baseChannel):
-    numElements = rawData.shape[0]
-
-    minX = 0;
-    maxX = numElements - 1
-
-    dataY = [rawData[baseChannel][i] for i in \
-             xrange(numElements)]
-
-    minY = min(dataY)
-    maxY = max(dataY)
-
-    # 3minIdY =
-
-    return [minY, maxY]
-
-
-class Grinder():
-    def __init__(self, expName, expDate, rawData, numTrials, gS, gD):
+class Grinder(QMainWindow):
+    def __init__(self, expName, expDate, rawData, numTrials, gS, gD, analyst, parent=None):
+        # Metadata into properties
+        self.analyst = analyst
         self.expDate = expDate
         self.expName = expName
         self.rawData = rawData
@@ -34,42 +26,130 @@ class Grinder():
         self.gD = gD
         self.gS = gS
 
-
-        plt.ion()
-
-        self.fig, self.ax = plt.subplots()
-        self.currArtist = None
-
+        # Some useful stuff
         self.endlines = []
         self.iBegins = []
         self.iEnds = []
+        self.currArtist = None
+        self.baseChannel = 'musLce0'
+        self.initCount = 0
+
+        QMainWindow.__init__(self, parent)
+        # self.showMaximized()
+        self.create_main_frame()
+        self.drawTrial()
+        self.onSetNumTrials()
+
+    def create_main_frame(self):
+        self.main_frame = QWidget()
+
+        self.fig = Figure((5.0, 4.0), dpi=100)
+        self.canvas = FigureCanvas(self.fig)
+        self.canvas.setParent(self.main_frame)
+        self.canvas.setFocusPolicy(Qt.StrongFocus)
+        self.canvas.setFocus()
+
+        self.mpl_toolbar = NavigationToolbar(self.canvas, self.main_frame)
+
+        self.canvas.mpl_connect('key_press_event', self.onKey)
+        self.canvas.mpl_connect('pick_event', self.onPick)
+
+        # Other GUI controls
+        #
+        self.textbox = QLineEdit("Enter num of trials")
+        self.textbox.selectAll()
+        self.textbox.setMinimumWidth(200)
+        self.connect(self.textbox, SIGNAL('editingFinished ()'), self.onSetNumTrials)
+
+        self.submitButton = QPushButton("&Submit")
+        self.connect(self.submitButton, SIGNAL('clicked()'), self.onSubmit)
+
+        self.grid_cb = QCheckBox("Show &Grid")
+        self.grid_cb.setChecked(False)
+        self.connect(self.grid_cb, SIGNAL('stateChanged(int)'), self.onGrid)
+
+        slider_label = QLabel('Bar width (%):')
+        self.slider = QSlider(Qt.Horizontal)
+        self.slider.setRange(1, 100)
+        self.slider.setValue(20)
+        self.slider.setTracking(True)
+        self.slider.setTickPosition(QSlider.TicksBothSides)
+        self.connect(self.slider, SIGNAL('valueChanged(int)'), self.onSlider)
+
+        #
+        # Layout with box sizers
+        #
+        hbox = QHBoxLayout()
+
+        for w in [  self.textbox, self.submitButton, self.grid_cb,
+                    slider_label, self.slider]:
+            hbox.addWidget(w)
+            hbox.setAlignment(w, Qt.AlignVCenter)
+
+        vbox = QVBoxLayout()
+        vbox.addWidget(self.canvas)
+        vbox.addWidget(self.mpl_toolbar)
+        vbox.addLayout(hbox)
+
+        self.main_frame.setLayout(vbox)
+        self.setCentralWidget(self.main_frame)
+
+    def onGrid(self):
+        pass
+
+    def onSlider(self):
+        pass
+
+    # Fix this function first and then call it at the load
+    def onSetNumTrials(self):
+        for eachLine in self.endlines:
+            self.ax.lines.remove(eachLine)
+
+        if (self.initCount == 0):
+            self.numTrials = 10
+            self.initCount = self.initCount + 1
+        else:
+            self.numTrials = int(self.textbox.text())
+        self.endlines = []
 
 
-    def setNumTrials(self):
-        self.numTrials = int(raw_input('How many trials do you see?'))
+        if (self.initCount != 0 and self.numTrials <= 1):
+            print('ERROR!: Trials must be at least 1')
 
-    def onSubmit(self, event):
+        maxL = 100
+        initialIndex = 0    # was 100
+        length = (self.rawData.shape[0] - initialIndex) / self.numTrials
+
+        self.iBegins = [initialIndex + i * length for i in xrange(self.numTrials)]
+        self.iEnds = [initialIndex + (i + 1) * length - 1 for i in xrange(self.numTrials)]
+
+        for i in xrange(self.numTrials):
+            self.endlines.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=5))
+
+        self.beginline = self.ax.axvline(0, 0, maxL, color='r', linewidth=5)
+        self.canvas.draw()
+
+    def onSubmit(self):
         self.iEnds = [l.get_data()[0][0] for l in self.endlines]
         for i in xrange(self.numTrials - 1):
             self.iBegins[i+1] = self.iEnds[i] + 1
 
         # Rewrite this line as a return from the button
         #+++ Verify with subplot
-        self.allTraces = [[self.rawData[self.baseChannel][self.iBegins[i]:self.iEnds[i]]] \
-                     for i in xrange(self.numTrials)]
+        self.allTraces = [[self.rawData[:][self.iBegins[i]:self.iEnds[i]]] \
+                          for i in xrange(self.numTrials)]
 
 
-        print("Trial Num:", len(self.allTraces))
+        print("Total trials:", len(self.allTraces))
 
         # Save to Freezer (MongoDB database)
         for eachTrial in self.allTraces:
             self.freezer.sendToFreezer(expName = self.expName, \
-                                  expDate = self.expDate, \
-                                  gD = self.gD,\
-                                  gS = self.gS, \
-                                  trialData = eachTrial)
-
-        plt.close(cad_grinder.fig)
+                                       expDate = self.expDate, \
+                                       gD = self.gD, \
+                                       gS = self.gS, \
+                                       trialData = eachTrial, \
+                                       analyst = self.analyst)
 
     def onPick(self, event):
         self.currArtist = event.artist
@@ -78,71 +158,70 @@ class Grinder():
                 line.set_color('r')
             else:
                 line.set_color('k')
-        self.fig.canvas.draw()
+        self.canvas.draw()
 
     def onKey(self, event):
         if event.key in '[':
             xs, ys = self.currArtist.get_data()
-            new_xs = [xx - 2 for xx in xs]
+            new_xs = [xx - 20 for xx in xs]
             self.currArtist.set_data(new_xs, ys)
         elif event.key in ']':
             xs, ys = self.currArtist.get_data()
-            new_xs = [xx + 2 for xx in xs]
+            new_xs = [xx + 20 for xx in xs]
             self.currArtist.set_data(new_xs, ys)
         elif event.key in '{':
             xs, ys = self.currArtist.get_data()
-            new_xs = [xx - 20 for xx in xs]
+            new_xs = [xx - 100 for xx in xs]
             self.currArtist.set_data(new_xs, ys)
         elif event.key in '}':
             xs, ys = self.currArtist.get_data()
-            new_xs = [xx + 20 for xx in xs]
+            new_xs = [xx + 100 for xx in xs]
             self.currArtist.set_data(new_xs, ys)
-        self.fig.canvas.draw()
+        self.canvas.draw()
 
-    def splitTrial(self, baseChannel):
-        self.baseChannel = baseChannel
-
+    def drawTrial(self):
+        self.fig.clear()
+        self.fig.hold(True)
+        self.ax = self.fig.add_subplot(111)
         self.ax.plot(self.rawData[self.baseChannel])
-        numElements = self.rawData.shape[0]
+        self.canvas.draw()
 
-        self.ax1 = plt.axes([0.0, 0.5, 0.1, 0.075])
-        self.b1 = Button(self.ax1, 'Submit')
-        self.b1.on_clicked(self.onSubmit)
-
-        begin = ginput(1)
-        end = ginput(1)
+        begin = [[1000, 0]]
+        end = [[1400, 0]]
 
         length = int(end[0][0] - begin[0][0])
 
         self.iBegins = [int(begin[0][0]) + i * length for i in xrange(self.numTrials)]
         self.iEnds = [int(begin[0][0]) + (i + 1) * length - 1 for i in xrange(self.numTrials)]
 
+        maxL = 100
 
-
-        [minL, maxL] = getYValueLimits(self.rawData, self.baseChannel)
         for iLine in xrange(self.numTrials):
             self.endlines.append(self.ax.axvline(self.iEnds[iLine], 0, maxL, color='k', picker=5))
-            self.fig.canvas.mpl_connect('pick_event', self.onPick)
-            self.fig.canvas.mpl_connect('key_press_event', self.onKey)
-
-        # self.fig.canvas.draw()
-        plt.show()
 
     def setFreezer(self, someFreezer):
         self.freezer = someFreezer
 
 
+def main():
+    app = QApplication(sys.argv)
 
-if __name__ == '__main__':
     myFreezer = Freezer('mongodb://diophantus.usc.edu:27017/')
-    rawFpga = pandas.read_csv('fpga')
-    cad_grinder = Grinder(expName = 'ramp-n-hold',\
-                          expDate = '20140514',\
-                          rawData = rawFpga,\
-                          numTrials = 10,\
-                          gD = 0,\
-                          gS = 0)
-    cad_grinder.setFreezer(myFreezer)
-    cad_grinder.splitTrial('musLce0')
 
-    raw_input("<Hit enter to close")
+    rawFpga = pandas.read_csv('fpga')
+    cadGrinder = Grinder(expName='ramp-n-hold', \
+                         expDate='20140514', \
+                         rawData=rawFpga, \
+                         numTrials=10, \
+                         gD=0, \
+                         gS=0, \
+                         analyst="Christoff Sulzenbacher")
+    cadGrinder.setFreezer(myFreezer)
+
+    cadGrinder.show()
+    app.exec_()
+
+
+if __name__ == "__main__":
+    main()
+

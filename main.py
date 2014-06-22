@@ -15,7 +15,7 @@ import pandas
 import matplotlib.pyplot as plt
 
 from Freezer import Freezer
-from Qt4Grinder import Grinder
+from Grinder import Grinder
 
 app = QApplication(sys.argv)
 
@@ -28,7 +28,7 @@ cadGrinder = Grinder(expName='ramp-n-hold', \
                      numTrials=10, \
                      gD=0, \
                      gS=0, \
-                     analyst="Christoff Sulzenbacher")
+                     analyst="Minos Niu")
 cadGrinder.setFreezer(myFreezer)
 
 cadGrinder.show()
