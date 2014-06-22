@@ -29,12 +29,13 @@ class Grinder(QMainWindow):
         self.gammaSta = gammaSta
 
         # Some useful stuff
-        self.endlines = []
+        self.allTrials = []
         self.iBegins = []
         self.iEnds = []
         self.currArtist = None
         self.baseChannel = 'musLce0'
         self.initCount = 0
+        self.isDragging = False
 
         QMainWindow.__init__(self, parent)
         # self.showMaximized()
@@ -69,7 +70,7 @@ class Grinder(QMainWindow):
         self.canvas.mpl_connect('key_press_event', self.onKey)
         self.canvas.mpl_connect('pick_event', self.onPick)
         self.canvas.mpl_connect('button_press_event', self.onMouseDown)
-        self.canvas.mpl_connect('button_relsease_event', self.onMouseUp)
+        self.canvas.mpl_connect('button_release_event', self.onMouseUp)
         self.canvas.mpl_connect('motion_notify_event', self.onMouseMotion)
 
         # Other GUI controls
@@ -120,7 +121,7 @@ class Grinder(QMainWindow):
 
     # Fix this function first and then call it at the load
     def onSetNumTrials(self):
-        for eachLine in self.endlines:
+        for eachLine in self.allTrials:
             self.ax.lines.remove(eachLine)
 
         if (self.initCount == 0):
@@ -128,7 +129,7 @@ class Grinder(QMainWindow):
             self.initCount = self.initCount + 1
         else:
             self.numTrials = int(self.textbox.text())
-        self.endlines = []
+        self.allTrials = []
 
 
         if (self.initCount != 0 and self.numTrials <= 1):
@@ -142,13 +143,13 @@ class Grinder(QMainWindow):
         self.iEnds = [initialIndex + (i + 1) * length - 1 for i in xrange(self.numTrials)]
 
         for i in xrange(self.numTrials):
-            self.endlines.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=5))
+            self.allTrials.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=5))
 
         self.beginline = self.ax.axvline(0, 0, maxL, color='r', linewidth=5)
         self.canvas.draw()
 
     def onSubmit(self):
-        self.iEnds = [l.get_data()[0][0] for l in self.endlines]
+        self.iEnds = [l.get_data()[0][0] for l in self.allTrials]
         for i in xrange(self.numTrials - 1):
             self.iBegins[i+1] = self.iEnds[i] + 1
 
@@ -171,7 +172,7 @@ class Grinder(QMainWindow):
 
     def onPick(self, event):
         self.currArtist = event.artist
-        for line in self.endlines:
+        for line in self.allTrials:
             if (line == self.currArtist):
                 line.set_color('r')
             else:
@@ -215,7 +216,7 @@ class Grinder(QMainWindow):
         maxL = 100
 
         for iLine in xrange(self.numTrials):
-            self.endlines.append(self.ax.axvline(self.iEnds[iLine], 0, maxL, color='k', picker=5))
+            self.allTrials.append(self.ax.axvline(self.iEnds[iLine], 0, maxL, color='k', picker=5))
 
     def setFreezer(self, someFreezer):
         self.freezer = someFreezer
