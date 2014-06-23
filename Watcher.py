@@ -58,16 +58,18 @@ class Watcher(QMainWindow):
                                  """)
         self.textbox.selectAll()
         self.textbox.setMinimumWidth(200)
-        self.connect(self.textbox, SIGNAL('editingFinished ()'), self.onSubmit)
 
-        self.submitButton = QPushButton("&Submit")
-        self.connect(self.submitButton, SIGNAL('clicked()'), self.onSubmit)
+        self.queryButton = QPushButton("&Query")
+        self.connect(self.queryButton, SIGNAL('clicked()'), self.onSubmit)
 
         self.fwdButton = QPushButton("&>>")
         self.connect(self.fwdButton, SIGNAL('clicked()'), self.onFwd)
 
         self.bwdButton = QPushButton("&<<")
         self.connect(self.bwdButton, SIGNAL('clicked()'), self.onBwd)
+
+        self.alignButton = QPushButton("&Align")
+        self.connect(self.alignButton, SIGNAL('clicked()'), self.onAlign)
 
         self.grid_cb = QCheckBox("Show &Grid")
         self.grid_cb.setChecked(False)
@@ -86,8 +88,8 @@ class Watcher(QMainWindow):
         #
         hbox = QHBoxLayout()
 
-        for w in [self.textbox, self.submitButton, \
-                  self.bwdButton, self.fwdButton, \
+        for w in [self.textbox, self.queryButton,
+                  self.bwdButton, self.fwdButton, self.alignButton,
                   self.grid_cb, slider_label, self.slider]:
             hbox.addWidget(w)
             hbox.setAlignment(w, Qt.AlignVCenter)
@@ -100,6 +102,16 @@ class Watcher(QMainWindow):
         self.main_frame.setLayout(vbox)
         self.setCentralWidget(self.main_frame)
 
+    def setOnset(self):
+        """Add the field 'onset' to all documents"""
+        try:
+            for doc in self.freezer.processed.find():
+                self.freezer.processed.update({'_id': doc['_id']},
+                                              {'$set' : {'timeOnset': 0}})
+        except:
+            print("Error updating")
+
+
     def onFwd(self):
         """Go forward 1 trial"""
         self.currTrial = min(self.currTrial + 1, self.numTrials - 1)
@@ -109,6 +121,9 @@ class Watcher(QMainWindow):
         """Go backward 1 trial"""
         self.currTrial = max(self.currTrial - 1, 0)
         self.onDraw()
+
+    def onAlign(self):
+        self.setOnset()
 
     def onDraw(self):
         self.fig.clear()

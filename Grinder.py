@@ -153,21 +153,21 @@ class Grinder(QMainWindow):
         self.iEnds = [int(l.get_data()[0][0]) for l in self.allEndLines]
         for i in xrange(self.numTrials - 1):
             self.iBegins[i + 1] = self.iEnds[i] + 1
-        self.allTraces = [self.rawData[self.iBegins[i] : self.iEnds[i]] for i in xrange(self.numTrials)]
+        self.allTraces = [self.rawData[self.iBegins[i]: self.iEnds[i]] for i in xrange(self.numTrials)]
 
     def freezeAllTrials(self):
         try:
             for eachTrial in self.allTraces:
-                self.freezer.sendToFreezer(expName=self.expName,
-                                           expDate=self.expDate,
-                                           gammaDyn=self.gammaDyn,
-                                           gammaSta=self.gammaSta,
-                                           trialData=eachTrial,
-                                           analystName=self.analystName)
+                self.freezer.freezeTrial(expName=self.expName,
+                                         expDate=self.expDate,
+                                         gammaDyn=self.gammaDyn,
+                                         gammaSta=self.gammaSta,
+                                         trialData=eachTrial,
+                                         analystName=self.analystName)
         except:
             print("Error when writing to database")
         finally:
-            print("Successfully froze %d trials." % self.numTrials)
+            print("Successfully froze %d pieces of cadaver." % self.numTrials)
 
     def setFreezer(self, someFreezer):
         self.freezer = someFreezer
