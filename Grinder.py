@@ -235,24 +235,38 @@ class Grinder(QMainWindow):
 
 
 if __name__ == "__main__":
+    """
+    Provide the following arguments when running from console:
+        - gammaDyn
+        - gammaSta
+        - name of the source file
+        - address of the Freezer database
+        - name of the analyst
+    Example:
+        $python Grinder.py 100 200 "./fpga" "localhost:27017" "Minos Niu"
+    """
     import sys
 
     app = QApplication(sys.argv)
 
-    # myFreezer = Freezer('mongodb://diophantus.usc.edu:27017/')
-    myFreezer = Freezer('mongodb://localhost:27017/')
-
-    gd = int(sys.argv[1])
-    gs = int(sys.argv[2])
+    expt = sys.argv[1]
+    date = sys.argv[2]
     filename = sys.argv[3]
+    gd = int(sys.argv[4])
+    gs = int(sys.argv[5])
+    analyst = sys.argv[6]
+    addr = sys.argv[7]
+
+
+    myFreezer = Freezer(addr)
 
     rawData = pandas.read_csv(filename)
-    cadGrinder = Grinder(expName='ramp-n-hold',
-                         expDate='20140514',
+    cadGrinder = Grinder(expName=expt,
+                         expDate=date,
                          rawData=rawData,
                          gammaDyn=gd,
                          gammaSta=gs,
-                         analystName="Minos Niu")
+                         analystName=analyst)
     cadGrinder.setFreezer(myFreezer)
 
     cadGrinder.show()

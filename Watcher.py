@@ -159,7 +159,11 @@ class Watcher(QMainWindow):
         th = base * 1.02
         f = lambda i: self.currTrial['musLce0'][i] <= th <= self.currTrial['musLce0'][min(len(self.currTrial) - 1, i + 1)]
 
-        self.currOnset = filter(f, range(len(self.currTrial)))[0]
+        possible = filter(f, range(len(self.currTrial)))
+        if possible:
+            self.currOnset = possible[0]
+        else:
+            self.currOnset = len(self.currTrial) / 2
         self.allOnsets[self.currTrialId] = self.currOnset
 
     def setCurrTrial(self, n=0):
