@@ -24,6 +24,8 @@ class Watcher(QMainWindow):
         self.freezer = freezer
         self.numTrials = 0
         self.currTrialId = 0
+        self.allTrials = None
+        self.allOnsets = None
 
         # # Useful stuff
         self.onsetLine1 = None
@@ -38,12 +40,31 @@ class Watcher(QMainWindow):
         """Query some data from freezer
         """
         self.allTrials = []
-        self.allDocs = self.freezer.posts.find(eval(queryStr))
-        for doc in self.allDocs:
+        self.allOnsets = []
+        self.queryStr = queryStr
+
+        allDocs = self.freezer.processed.find(eval(self.queryStr))
+        for doc in allDocs:
             t = pickle.loads(doc['trialData'])
-            self.allTrials.append(t.reset_index())
+            self.allTrials.append(t)
+
+            t = doc['timeOnset']
+            self.allOnsets.append(t)
+
         self.numTrials = len(self.allTrials)
         print "Found", self.numTrials, "trials."
+
+    def freezeAllOnsets(self):
+        """Freeze timeOnset field in Freezer
+        """
+        allDocs = self.freezer.processed.find(eval(self.queryStr))
+        try:
+            for onset, doc in zip(self.allOnsets, allDocs):
+                self.freezer.processed.update({'_id': doc['_id']},
+                                              {'$set': {'timeOnset': onset}})
+            print("Froze %d onsets" % len(self.allOnsets))
+        except:
+            print("Error updating")
 
     def createMainFrame(self):
         self.main_frame = QWidget()
@@ -74,8 +95,8 @@ class Watcher(QMainWindow):
         self.bwdButton = QPushButton("&<<")
         self.connect(self.bwdButton, SIGNAL('clicked()'), self.onBwd)
 
-        self.alignButton = QPushButton("&Align")
-        self.connect(self.alignButton, SIGNAL('clicked()'), self.onAlign)
+        self.alignButton = QPushButton("&Finish")
+        self.connect(self.alignButton, SIGNAL('clicked()'), self.onFinish)
 
         self.grid_cb = QCheckBox("Show &Grid")
         self.grid_cb.setChecked(False)
@@ -130,7 +151,6 @@ class Watcher(QMainWindow):
         self.onsetLine2 = self.ax2.axvline(self.currOnset, 0, maxL, color='r')
         self.canvas.draw()
 
-
     def setOnset(self):
         """Add the field 'onset' to all documents"""
         l = self.currTrial['musLce0'][0:100]
@@ -139,14 +159,7 @@ class Watcher(QMainWindow):
         f = lambda i: self.currTrial['musLce0'][i] <= th <= self.currTrial['musLce0'][min(len(self.currTrial) - 1, i + 1)]
 
         self.currOnset = filter(f, range(len(self.currTrial)))[0]
-        print "Align Onset = ", self.currOnset
-
-        try:
-            for doc in self.freezer.processed.find():
-                self.freezer.processed.update({'_id': doc['_id']},
-                                              {'$set': {'timeOnset': 0}})
-        except:
-            print("Error updating")
+        self.allOnsets[self.currTrialId] = self.currOnset
 
     def setCurrTrial(self, n=0):
         self.currTrialId = n
@@ -166,8 +179,9 @@ class Watcher(QMainWindow):
         self.setOnset()
         self.setOnsetLine()
 
-    def onAlign(self):
-        self.setOnset()
+    def onFinish(self):
+        self.freezeAllOnsets()
+        # self.close()
 
     def onSubmit(self):
         self.queryData(str(self.textbox.toPlainText()))
