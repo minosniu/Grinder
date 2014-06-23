@@ -10,7 +10,6 @@ class Freezer():
             self.client = mg.MongoClient(addr)
             self.db = self.client.johndb
             self.posts = self.db.posts
-            print "Connected successfully!!!"
         except mg.errors.ConnectionFailure, e:
             print "%s: Could not connect to MongoDB: %s" % (e, addr)
 
@@ -28,11 +27,11 @@ class Freezer():
             "isAccepted" : True
         }
 
-        post_id = self.posts.insert(newTrial)
-
-        print "Saving doc with _id: ", post_id
-
-        sys.stdout.flush()
+        try:
+            post_id = self.posts.insert(newTrial)
+            return post_id
+        except mg.errors.ConnectionFailure, e:
+            print "%s: Could not connect to MongoDB: %s" % (e, addr)
 
 
 

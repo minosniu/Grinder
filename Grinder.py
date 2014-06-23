@@ -2,8 +2,6 @@ from __future__ import print_function
 
 __author__ = "minosniu"
 
-import sys
-
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.backend_bases import key_press_handler
@@ -16,16 +14,15 @@ import pandas
 import matplotlib.pyplot as plt
 
 from Freezer import Freezer
-from Trial import Trial
+
 
 class Grinder(QMainWindow):
-    def __init__(self, expName, expDate, rawData, numTrials, gammaSta, gammaDyn, analystName, parent=None):
+    def __init__(self, expName, expDate, rawData, gammaSta, gammaDyn, analystName, parent=None):
         # Metadata into properties
         self.analystName = analystName
         self.expDate = expDate
         self.expName = expName
         self.rawData = rawData
-        self.numTrials = numTrials
         self.gammaDyn = gammaDyn
         self.gammaSta = gammaSta
 
@@ -36,7 +33,6 @@ class Grinder(QMainWindow):
         self.currEndLine = None
         self.currEndLineId = None
         self.baseChannel = 'musLce0'
-        self.initCount = 0
         self.isDragging = False
 
         QMainWindow.__init__(self, parent)
@@ -129,53 +125,61 @@ class Grinder(QMainWindow):
         self.canvas.draw()
 
     # IOC for all trials
-    def setNumTrials(self, n = 2):
+    def setNumTrials(self, n=2):
         for eachLine in self.allEndLines:
             self.ax.lines.remove(eachLine)
 
-        if (self.initCount == 0):
-            self.numTrials = 10
-            self.initCount = self.initCount + 1
-        else:
-            self.numTrials = n
-
+        self.numTrials = n
         self.allEndLines = []
 
-        if (self.initCount != 0 and self.numTrials <= 1):
-            print('ERROR!: Trials must be at least 1')
-
         maxL = 100
-        initialIndex = 0    # was 100
+        initialIndex = 0  # was 100
         length = (self.rawData.shape[0] - initialIndex) / self.numTrials
 
         self.iBegins = [initialIndex + i * length for i in xrange(self.numTrials)]
         self.iEnds = [initialIndex + (i + 1) * length - 1 for i in xrange(self.numTrials)]
 
         for i in xrange(self.numTrials):
-            self.allEndLines.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=5))
+            self.allEndLines.append(self.ax.axvline(self.iEnds[i], 0, maxL, color='k', picker=10))
 
         self.beginLine = self.ax.axvline(0, 0, maxL, color='r', linewidth=5)
+
+        # Select the first line by default
+        self.setCurrEndLine(self.allEndLines[0])
+
         self.canvas.draw()
 
     def setAllTrials(self):
-        self.iEnds = [l.get_data()[0][0] for l in self.allEndLines]
+        self.iEnds = [int(l.get_data()[0][0]) for l in self.allEndLines]
         for i in xrange(self.numTrials - 1):
             self.iBegins[i + 1] = self.iEnds[i] + 1
-        self.allTraces = [self.rawData[self.iBegins[i]:self.iEnds[i]] \
-                          for i in xrange(self.numTrials)]
-        print("You identified %d trials:" % len(self.allTraces))
+        self.allTraces = [self.rawData[self.iBegins[i] : self.iEnds[i]] for i in xrange(self.numTrials)]
 
     def freezeAllTrials(self):
-        for eachTrial in self.allTraces:
-            self.freezer.sendToFreezer(expName=self.expName, \
-                                       expDate=self.expDate, \
-                                       gammaDyn=self.gammaDyn, \
-                                       gammaSta=self.gammaSta, \
-                                       trialData=eachTrial, \
-                                       analystName=self.analystName)
+        try:
+            for eachTrial in self.allTraces:
+                self.freezer.sendToFreezer(expName=self.expName,
+                                           expDate=self.expDate,
+                                           gammaDyn=self.gammaDyn,
+                                           gammaSta=self.gammaSta,
+                                           trialData=eachTrial,
+                                           analystName=self.analystName)
+        except:
+            print("Error when writing to database")
+        finally:
+            print("Successfully froze %d trials." % self.numTrials)
 
     def setFreezer(self, someFreezer):
         self.freezer = someFreezer
+
+    def setCurrEndLine(self, artist):
+        self.currEndLine = artist
+        for i, line in enumerate(self.allEndLines):
+            if line == self.currEndLine:
+                self.currEndLineId = i
+                line.set_color('r')
+            else:
+                line.set_color('k')
 
     def onMouseDown(self, event):
         self.isDragging = True
@@ -204,15 +208,10 @@ class Grinder(QMainWindow):
 
         # Save trials to Freezer (MongoDB database)
         self.freezeAllTrials()
+        self.close()
 
     def onPick(self, event):
-        self.currEndLine = event.artist
-        for i, line in enumerate(self.allEndLines):
-            if (line == self.currEndLine):
-                self.currEndLineId = i
-                line.set_color('r')
-            else:
-                line.set_color('k')
+        self.setCurrEndLine(event.artist)
         self.canvas.draw()
 
     def onKey(self, event):
@@ -236,18 +235,24 @@ class Grinder(QMainWindow):
 
 
 if __name__ == "__main__":
+    import sys
+
     app = QApplication(sys.argv)
 
-    myFreezer = Freezer('mongodb://diophantus.usc.edu:27017/')
+    # myFreezer = Freezer('mongodb://diophantus.usc.edu:27017/')
+    myFreezer = Freezer('mongodb://localhost:27017/')
 
-    rawFpga = pandas.read_csv('fpga')
-    cadGrinder = Grinder(expName='ramp-n-hold', \
-                         expDate='20140514', \
-                         rawData=rawFpga, \
-                         numTrials=2, \
-                         gammaDyn=0, \
-                         gammaSta=0, \
-                         analystName="Dummy analyst")
+    gd = int(sys.argv[1])
+    gs = int(sys.argv[2])
+    filename = sys.argv[3]
+
+    rawData = pandas.read_csv(filename)
+    cadGrinder = Grinder(expName='ramp-n-hold',
+                         expDate='20140514',
+                         rawData=rawData,
+                         gammaDyn=gd,
+                         gammaSta=gs,
+                         analystName="Minos Niu")
     cadGrinder.setFreezer(myFreezer)
 
     cadGrinder.show()
