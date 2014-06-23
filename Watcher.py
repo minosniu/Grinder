@@ -25,6 +25,7 @@ class Watcher(QMainWindow):
         self.numTrials = 0
         self.currTrialId = 0
         self.allTrials = None
+        self.allAlignedTrials = None
         self.allOnsets = None
 
         # # Useful stuff
@@ -40,6 +41,7 @@ class Watcher(QMainWindow):
         """Query some data from freezer
         """
         self.allTrials = []
+        self.allAlignedTrials = []
         self.allOnsets = []
         self.queryStr = queryStr
 
@@ -53,6 +55,8 @@ class Watcher(QMainWindow):
             self.allOnsets.append(t)
 
         self.numTrials = len(self.allTrials)
+
+        self.allAlignedTrials = self.allTrials
         print "Found", self.numTrials, "trials."
 
     def freezeAllOnsets(self):
@@ -133,11 +137,13 @@ class Watcher(QMainWindow):
     def drawCurrTrial(self):
         self.fig.clear()
         self.fig.hold(True)
-        self.ax1 = self.fig.add_subplot(211)
-        self.ax2 = self.fig.add_subplot(212)
+        self.ax1 = self.fig.add_subplot(311)
+        self.ax2 = self.fig.add_subplot(312)
+        self.ax3 = self.fig.add_subplot(313)
 
         self.ax1.plot(self.currTrial['musLce0'])
         self.ax2.plot(self.currTrial['emg0'])
+        self.ax3.plot(self.allAlignedTrials[self.currTrialId]['emg0'])
         self.canvas.draw()
 
     def setOnsetLine(self):
@@ -154,21 +160,24 @@ class Watcher(QMainWindow):
 
     def setOnset(self):
         """Add the field 'onset' to all documents"""
-        l = self.currTrial['musLce0'][0:100]
+        l = self.currTrial.musLce0[0:100]
         base = sum(l) / float(len(l))
         th = base * 1.02
-        f = lambda i: self.currTrial['musLce0'][i] <= th <= self.currTrial['musLce0'][min(len(self.currTrial) - 1, i + 1)]
+        f = lambda i: self.currTrial.musLce0[i] <= th <= self.currTrial.musLce0[min(len(self.currTrial) - 1, i + 1)]
 
-        possible = filter(f, range(len(self.currTrial)))
+        possible = filter(f, range(len(self.currTrial.musLce0)))
         if possible:
             self.currOnset = possible[0]
         else:
             self.currOnset = len(self.currTrial) / 2
         self.allOnsets[self.currTrialId] = self.currOnset
+        self.allAlignedTrials[self.currTrialId] = self.currTrial.drop(xrange(self.currOnset - 100))
 
     def setCurrTrial(self, n=0):
         self.currTrialId = n
+        print(len(self.allTrials))
         self.currTrial = self.allTrials[self.currTrialId]
+        print(self.currTrialId, len(self.currTrial))
 
     def onFwd(self):
         """Go forward 1 trial"""
