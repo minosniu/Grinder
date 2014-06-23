@@ -1,3 +1,5 @@
+import StringIO
+
 __author__ = 'johnrocamora'
 import pymongo as mg
 import datetime
@@ -16,7 +18,9 @@ class Freezer():
 
 
     def freezeTrial(self, expName, expDate, gammaSta, gammaDyn, trialData, analystName):
-        pickledTrialData = pickle.dumps(trialData)
+        s = StringIO.StringIO()
+        trialData.to_csv(s)
+        serialData = s.getvalue()
 
         newTrial={
             "expName" : expName,
@@ -24,7 +28,7 @@ class Freezer():
             "analystName" : analystName,
             "gammaDyn" : gammaDyn,
             "gammaSta" : gammaSta,
-            "trialData" : pickledTrialData,
+            "trialData" : serialData,
             "isAccepted" : True
         }
 

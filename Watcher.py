@@ -1,4 +1,4 @@
-import pickle
+import StringIO
 from pymongo import MongoClient
 
 import sys
@@ -11,7 +11,7 @@ from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 
 from Freezer import Freezer
-import pandas
+import pandas as pd
 
 __author__ = 'minosniu'
 
@@ -45,7 +45,8 @@ class Watcher(QMainWindow):
 
         allDocs = self.freezer.processed.find(eval(self.queryStr))
         for doc in allDocs:
-            t = pickle.loads(doc['trialData'])
+            s = StringIO.StringIO(doc['trialData'])
+            t = pd.read_csv(s)
             self.allTrials.append(t)
 
             t = doc['timeOnset']
