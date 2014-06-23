@@ -153,7 +153,7 @@ class Grinder(QMainWindow):
         self.iEnds = [int(l.get_data()[0][0]) for l in self.allEndLines]
         for i in xrange(self.numTrials - 1):
             self.iBegins[i + 1] = self.iEnds[i] + 1
-        self.allTraces = [self.rawData[self.iBegins[i]: self.iEnds[i]] for i in xrange(self.numTrials)]
+        self.allTraces = [self.rawData[self.iBegins[i]: self.iEnds[i]].reset_index() for i in xrange(self.numTrials)]
 
     def freezeAllTrials(self):
         try:

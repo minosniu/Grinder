@@ -23,7 +23,11 @@ class Watcher(QMainWindow):
         """Constructor for Viewer"""
         self.freezer = freezer
         self.numTrials = 0
-        self.currTrial = 0
+        self.currTrialId = 0
+
+        # # Useful stuff
+        self.onsetLine1 = None
+        self.onsetLine2 = None
 
         QMainWindow.__init__(self, parent)
         # self.showMaximized()
@@ -34,8 +38,10 @@ class Watcher(QMainWindow):
         """Query some data from freezer
         """
         self.allTrials = []
-        for post in self.freezer.posts.find(eval(queryStr)):
-            self.allTrials.append(pickle.loads(post['trialData']))
+        self.allDocs = self.freezer.posts.find(eval(queryStr))
+        for doc in self.allDocs:
+            t = pickle.loads(doc['trialData'])
+            self.allTrials.append(t.reset_index())
         self.numTrials = len(self.allTrials)
         print "Found", self.numTrials, "trials."
 
@@ -102,50 +108,73 @@ class Watcher(QMainWindow):
         self.main_frame.setLayout(vbox)
         self.setCentralWidget(self.main_frame)
 
+    def drawCurrTrial(self):
+        self.fig.clear()
+        self.fig.hold(True)
+        self.ax1 = self.fig.add_subplot(211)
+        self.ax2 = self.fig.add_subplot(212)
+
+        self.ax1.plot(self.currTrial['musLce0'])
+        self.ax2.plot(self.currTrial['emg0'])
+        self.canvas.draw()
+
+    def setOnsetLine(self):
+        maxL = 100
+
+        if self.onsetLine1 in self.ax1.lines:
+            self.ax1.lines.remove(self.onsetLine1)
+        if self.onsetLine2 in self.ax2.lines:
+            self.ax2.lines.remove(self.onsetLine2)
+
+        self.onsetLine1 = self.ax1.axvline(self.currOnset, 0, maxL, color='r')
+        self.onsetLine2 = self.ax2.axvline(self.currOnset, 0, maxL, color='r')
+        self.canvas.draw()
+
+
     def setOnset(self):
         """Add the field 'onset' to all documents"""
+        l = self.currTrial['musLce0'][0:100]
+        base = sum(l) / float(len(l))
+        th = base * 1.02
+        f = lambda i: self.currTrial['musLce0'][i] <= th <= self.currTrial['musLce0'][min(len(self.currTrial) - 1, i + 1)]
+
+        self.currOnset = filter(f, range(len(self.currTrial)))[0]
+        print "Align Onset = ", self.currOnset
+
         try:
             for doc in self.freezer.processed.find():
                 self.freezer.processed.update({'_id': doc['_id']},
-                                              {'$set' : {'timeOnset': 0}})
+                                              {'$set': {'timeOnset': 0}})
         except:
             print("Error updating")
 
+    def setCurrTrial(self, n=0):
+        self.currTrialId = n
+        self.currTrial = self.allTrials[self.currTrialId]
 
     def onFwd(self):
         """Go forward 1 trial"""
-        self.currTrial = min(self.currTrial + 1, self.numTrials - 1)
-        self.onDraw()
+        self.setCurrTrial(min(self.currTrialId + 1, self.numTrials - 1))
+        self.drawCurrTrial()
+        self.setOnset()
+        self.setOnsetLine()
 
     def onBwd(self):
         """Go backward 1 trial"""
-        self.currTrial = max(self.currTrial - 1, 0)
-        self.onDraw()
+        self.setCurrTrial(max(self.currTrialId - 1, 0))
+        self.drawCurrTrial()
+        self.setOnset()
+        self.setOnsetLine()
 
     def onAlign(self):
         self.setOnset()
 
-    def onDraw(self):
-        self.fig.clear()
-        self.fig.hold(True)
-
-        if self.allTrials: # Not empty
-            self.ax = self.fig.add_subplot(211)
-            self.ax.plot(self.allTrials[self.currTrial]['musLce0'])
-
-            self.ax = self.fig.add_subplot(212)
-            self.ax.plot(self.allTrials[self.currTrial]['emg0'])
-            self.canvas.draw()
-
-    def resetPlot(self):
-        """Clean the counter, etc."""
-        self.currTrial = 0
-
     def onSubmit(self):
         self.queryData(str(self.textbox.toPlainText()))
-        self.resetPlot()
-        self.onDraw()
-        # print(self.allTrials[0].musLce0)
+        self.setCurrTrial()
+        self.drawCurrTrial()
+        self.setOnset()
+        self.setOnsetLine()
 
 
 def main():
