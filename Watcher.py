@@ -56,7 +56,7 @@ class Watcher(QMainWindow):
 
         self.numTrials = len(self.allTrials)
 
-        self.allAlignedTrials = self.allTrials
+        self.allAlignedTrials = [t for t in self.allTrials]
         print "Found", self.numTrials, "trials."
 
     def freezeAllOnsets(self):
