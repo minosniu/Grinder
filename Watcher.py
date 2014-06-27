@@ -45,18 +45,19 @@ class Watcher(QMainWindow):
         self.allOnsets = []
         self.queryStr = queryStr
 
-        allDocs = self.freezer.processed.find(eval(self.queryStr))
+        # allDocs = self.freezer.processed.find(eval(self.queryStr))
+        allDocs = self.freezer.posts.find(eval(self.queryStr))
         for doc in allDocs:
             s = StringIO.StringIO(doc['trialData'])
             t = pd.read_csv(s)
             self.allTrials.append(t)
 
-            t = doc['timeOnset']
+            t = 0#doc['timeOnset']
             self.allOnsets.append(t)
 
         self.numTrials = len(self.allTrials)
 
-        self.allAlignedTrials = [t for t in self.allTrials]
+        # self.allAlignedTrials = [t for t in self.allTrials]
         print "Found", self.numTrials, "trials."
 
     def freezeAllOnsets(self):
@@ -100,7 +101,7 @@ class Watcher(QMainWindow):
         self.bwdButton = QPushButton("&<<")
         self.connect(self.bwdButton, SIGNAL('clicked()'), self.onBwd)
 
-        self.alignButton = QPushButton("&Finish")
+        self.alignButton = QPushButton("&Close")
         self.connect(self.alignButton, SIGNAL('clicked()'), self.onFinish)
 
         self.grid_cb = QCheckBox("Show &Grid")
@@ -137,13 +138,13 @@ class Watcher(QMainWindow):
     def drawCurrTrial(self):
         self.fig.clear()
         self.fig.hold(True)
-        self.ax1 = self.fig.add_subplot(311)
-        self.ax2 = self.fig.add_subplot(312)
-        self.ax3 = self.fig.add_subplot(313)
+        self.ax1 = self.fig.add_subplot(211)
+        self.ax2 = self.fig.add_subplot(212)
 
         self.ax1.plot(self.currTrial['musLce0'])
+        self.ax1.set_ylim([0.5, 1.5])
         self.ax2.plot(self.currTrial['emg0'])
-        self.ax3.plot(self.allAlignedTrials[self.currTrialId]['emg0'])
+        self.ax2.set_ylim([-6.0, 6.0])
         self.canvas.draw()
 
     def setOnsetLine(self):
@@ -175,34 +176,34 @@ class Watcher(QMainWindow):
 
     def setCurrTrial(self, n=0):
         self.currTrialId = n
-        print(len(self.allTrials))
+        # print(len(self.allTrials))
         self.currTrial = self.allTrials[self.currTrialId]
-        print(self.currTrialId, len(self.currTrial))
+        # print(self.currTrialId, len(self.currTrial))
 
     def onFwd(self):
         """Go forward 1 trial"""
         self.setCurrTrial(min(self.currTrialId + 1, self.numTrials - 1))
         self.drawCurrTrial()
-        self.setOnset()
-        self.setOnsetLine()
+        # self.setOnset()
+        # self.setOnsetLine()
 
     def onBwd(self):
         """Go backward 1 trial"""
         self.setCurrTrial(max(self.currTrialId - 1, 0))
         self.drawCurrTrial()
-        self.setOnset()
-        self.setOnsetLine()
+        # self.setOnset()
+        # self.setOnsetLine()
 
     def onFinish(self):
-        self.freezeAllOnsets()
-        # self.close()
+        # self.freezeAllOnsets()
+        self.close()
 
     def onSubmit(self):
         self.queryData(str(self.textbox.toPlainText()))
         self.setCurrTrial()
         self.drawCurrTrial()
-        self.setOnset()
-        self.setOnsetLine()
+        # self.setOnset()
+        # self.setOnsetLine()
 
 
 def main():
